@@ -104,3 +104,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# VSCode
+.vscode
+
+# Models
+*.h5
