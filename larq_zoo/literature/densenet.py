@@ -32,6 +32,10 @@ class BinaryDenseNetFactory(ModelFactory):
     @property
     def kernel_constraint(self):
         return lq.constraints.WeightClip(clip_value=1.3)
+    
+    @property
+    def pad_3x3(self) :
+        return tf.constant([[0, 0], [1, 1], [1, 1], [0, 0]]) 
 
     initial_filters: int = Field(64)
     growth_rate: int = Field(64)
@@ -47,6 +51,7 @@ class BinaryDenseNetFactory(ModelFactory):
 
     def densely_connected_block(self, x: tf.Tensor, dilation_rate: int = 1):
         y = tf.keras.layers.BatchNormalization(momentum=0.9, epsilon=1e-5)(x)
+        y = tf.pad(y, self.pad_3x3, "SYMMETRIC")
         y = lq.layers.QuantConv2D(
             filters=self.growth_rate,
             kernel_size=3,
@@ -55,7 +60,7 @@ class BinaryDenseNetFactory(ModelFactory):
             kernel_quantizer=self.kernel_quantizer,
             kernel_initializer="glorot_normal",
             kernel_constraint=self.kernel_constraint,
-            padding="same",
+            padding="valid",
             use_bias=False,
         )(y)
         return tf.keras.layers.concatenate([x, y])
