@@ -9,8 +9,13 @@ proj_path = os.path.abspath(os.path.dirname(__file__))
 res_path = f"{proj_path}/results"
 os.makedirs(res_path, exist_ok=True)
 
+# BinaryDenseNet
 from larq_zoo.literature.densenet import *
 from larq_zoo.training.basic_experiments import TrainBinaryDenseNet28, TrainBinaryDenseNet37
+
+# BiRealNet
+from larq_zoo.literature.birealnet import *
+from larq_zoo.training.basic_experiments import TrainBiRealNet
 
 
 def _get_dataset(dataset: str = "cifar10") -> Tuple[int, Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
@@ -27,6 +32,11 @@ def _get_dataset(dataset: str = "cifar10") -> Tuple[int, Tuple[np.ndarray, np.nd
 def _fit(nn, x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray, train_params) -> None:
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     train_dataset = train_dataset.shuffle(buffer_size=len(x_train)).batch(train_params.batch_size).repeat()
+    callbacks = []
+    if hasattr(train_params, "learning_rate_schedule"):
+        callbacks.append(
+            tf.keras.callbacks.LearningRateScheduler(train_params.learning_rate_schedule)
+        )
     nn.fit(x_train, y_train,
         epochs=train_params.epochs,
         steps_per_epoch=math.ceil(x_train.shape[0] / train_params.batch_size),
@@ -34,7 +44,7 @@ def _fit(nn, x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_tes
         validation_steps=math.ceil(x_test.shape[0] / train_params.batch_size),
         validation_freq=train_params.validation_frequency,
         verbose=1,
-        callbacks=tf.keras.callbacks.LearningRateScheduler(train_params.learning_rate_schedule)
+        callbacks=callbacks
     )
 
 
@@ -58,7 +68,7 @@ def Mod_TrainBinaryDenseNet28(dataset: str = "cifar10") -> None :
     )
     lq.models.summary(nn)
     _fit(nn, x_train, y_train, x_test, y_test, train_params)
-    nn.save(f"{res_path}/BinaryDenseNet28_{dataset}.h5")
+    nn.save(f"{res_path}/{dataset}_BinaryDenseNet28.h5")
 
 
 def Mod_TrainBinaryDenseNet37(dataset: str = "cifar10") -> None :
@@ -81,10 +91,35 @@ def Mod_TrainBinaryDenseNet37(dataset: str = "cifar10") -> None :
     )
     lq.models.summary(nn)
     _fit(nn, x_train, y_train, x_test, y_test, train_params)
-    nn.save(f"{res_path}/BinaryDenseNet37_{dataset}.h5")
+    nn.save(f"{res_path}/{dataset}_BinaryDenseNet37.h5")
+
+
+def Mod_TrainBiRealNet(dataset: str = "cifar10") -> None :
+    num_classes, (x_train, y_train), (x_test, y_test) = _get_dataset(dataset)
+    
+    train_params = TrainBiRealNet()
+    
+    nn = BiRealNet(
+        input_shape=x_train.shape[1:],
+        weights=None,
+        num_classes=num_classes
+    )
+    
+    metrics = ["sparse_categorical_accuracy"]
+    loss = "sparse_categorical_crossentropy"
+    nn.compile(
+        optimizer=train_params.optimizer,
+        loss=loss,
+        metrics=metrics,
+    )
+    lq.models.summary(nn)
+    _fit(nn, x_train, y_train, x_test, y_test, train_params)
+    nn.save(f"{res_path}/{dataset}_BiRealNet.h5")
 
 
 if __name__ == "__main__":
+    Mod_TrainBiRealNet("cifar100")
+    Mod_TrainBiRealNet("cifar10")
     Mod_TrainBinaryDenseNet28("cifar100")
     Mod_TrainBinaryDenseNet37("cifar100")
     Mod_TrainBinaryDenseNet28("cifar10")

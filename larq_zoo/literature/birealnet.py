@@ -21,6 +21,10 @@ class BiRealNetFactory(ModelFactory):
     kernel_initializer: Union[tf.keras.initializers.Initializer, str] = Field(
         "glorot_normal"
     )
+    
+    @property
+    def pad_3x3(self) :
+        return tf.constant([[0, 0], [1, 1], [1, 1], [0, 0]]) 
 
     def residual_block(
         self, x, double_filters: bool = False, filters: Optional[int] = None
@@ -43,11 +47,12 @@ class BiRealNetFactory(ModelFactory):
             )(shortcut)
             shortcut = tf.keras.layers.BatchNormalization(momentum=0.8)(shortcut)
 
+        x = tf.pad(x, self.pad_3x3, "SYMMETRIC")
         x = lq.layers.QuantConv2D(
             out_filters,
             (3, 3),
             strides=1 if out_filters == in_filters else 2,
-            padding="same",
+            padding="valid",
             input_quantizer=self.input_quantizer,
             kernel_quantizer=self.kernel_quantizer,
             kernel_initializer=self.kernel_initializer,
