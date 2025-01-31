@@ -81,7 +81,7 @@ def Mod_TrainBinaryDenseNet37(dataset: str = "cifar10") -> None :
     )
     lq.models.summary(nn)
     _fit(nn, x_train, y_train, x_test, y_test, train_params)
-    nn.save(f"{res_path}/BinaryDenseNet28_{dataset}.h5")
+    nn.save(f"{res_path}/BinaryDenseNet37_{dataset}.h5")
 
 
 if __name__ == "__main__":
