@@ -17,6 +17,10 @@ from larq_zoo.training.basic_experiments import TrainBinaryDenseNet28, TrainBina
 from larq_zoo.literature.birealnet import *
 from larq_zoo.training.basic_experiments import TrainBiRealNet
 
+# ResNetE18
+from larq_zoo.literature.resnet_e import *
+from larq_zoo.training.basic_experiments import TrainBinaryResNetE18
+
 
 def _get_dataset(dataset: str = "cifar10") -> Tuple[int, Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
     if dataset == "cifar10":
@@ -117,10 +121,31 @@ def Mod_TrainBiRealNet(dataset: str = "cifar10") -> None :
     nn.save(f"{res_path}/{dataset}_BiRealNet.h5")
 
 
+def Mod_TrainBinaryResNetE18(dataset: str = "cifar10") -> None :
+    num_classes, (x_train, y_train), (x_test, y_test) = _get_dataset(dataset)
+    
+    train_params = TrainBinaryResNetE18()
+    
+    nn = BinaryResNetE18(
+        input_shape=x_train.shape[1:],
+        weights=None,
+        num_classes=num_classes
+    )
+    
+    metrics = ["sparse_categorical_accuracy"]
+    loss = "sparse_categorical_crossentropy"
+    nn.compile(
+        optimizer=train_params.optimizer,
+        loss=loss,
+        metrics=metrics,
+    )
+    lq.models.summary(nn)
+    _fit(nn, x_train, y_train, x_test, y_test, train_params)
+    nn.save(f"{res_path}/{dataset}_BinaryResNetE18.h5")
+
+
 if __name__ == "__main__":
+    Mod_TrainBinaryResNetE18("cifar100")
     Mod_TrainBiRealNet("cifar100")
-    Mod_TrainBiRealNet("cifar10")
     Mod_TrainBinaryDenseNet28("cifar100")
     Mod_TrainBinaryDenseNet37("cifar100")
-    Mod_TrainBinaryDenseNet28("cifar10")
-    Mod_TrainBinaryDenseNet37("cifar10")

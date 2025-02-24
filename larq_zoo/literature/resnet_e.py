@@ -26,6 +26,10 @@ class BinaryResNetE18Factory(ModelFactory):
     @property
     def kernel_constraint(self):
         return lq.constraints.WeightClip(clip_value=1.25)
+    
+    @property
+    def pad_3x3(self) :
+        return tf.constant([[0, 0], [1, 1], [1, 1], [0, 0]]) 
 
     @property
     def spec(self):
@@ -58,11 +62,12 @@ class BinaryResNetE18Factory(ModelFactory):
         else:
             residual = x
 
+        x = tf.pad(x, self.pad_3x3, "SYMMETRIC")
         x = lq.layers.QuantConv2D(
             filters,
             kernel_size=3,
             strides=strides,
-            padding="same",
+            padding="valid",
             input_quantizer=self.input_quantizer,
             kernel_quantizer=self.kernel_quantizer,
             kernel_constraint=self.kernel_constraint,

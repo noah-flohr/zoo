@@ -108,6 +108,9 @@ class TrainBinaryDenseNet28(TrainLarqZooModel):
 class TrainBinaryDenseNet37(TrainBinaryDenseNet28):
     model = ComponentField(BinaryDenseNet37Factory)
     batch_size = Field(192)
+    learning_rate = Field(2e-3)
+    learning_steps = Field((90, 105, 115))
+    learning_factor = Field(0.2)
 
 
 @task
