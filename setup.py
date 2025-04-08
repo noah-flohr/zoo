@@ -20,10 +20,10 @@ setup(
     install_requires=[
         "numpy>=1.15.0",
         "packaging>=19",
-        "larq>=0.9.2,<0.13.2",
+        "larq==0.13.3",
         "zookeeper>=1.0.0",
         "typeguard<3.0.0",
-        "protobuf<3.21",
+        "protobuf==3.20.3",
         "importlib-metadata ~= 2.0 ; python_version<'3.8'",
     ],
     extras_require={
