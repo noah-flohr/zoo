@@ -12,6 +12,14 @@ from larq_zoo.literature.densenet import (
     BinaryDenseNet37Factory,
     BinaryDenseNet45Factory,
 )
+from larq_zoo.literature.densenet_ternary import (
+    TernaryDenseNet,
+    TernaryDenseNet28Factory,
+    TernaryDenseNet37DilatedFactory,
+    TernaryDenseNet37Factory,
+    TernaryDenseNet45Factory,
+)
+
 from larq_zoo.literature.dorefanet import DoReFaNetFactory
 from larq_zoo.literature.resnet_e import BinaryResNetE18Factory
 from larq_zoo.literature.xnornet import XNORNetFactory
@@ -128,6 +136,32 @@ class TrainBinaryDenseNet45(TrainBinaryDenseNet28):
     batch_size = Field(384)
     learning_rate = Field(0.008)
     learning_steps = Field((80, 100))
+
+
+
+
+@task
+class TrainTernaryDenseNet28(TrainLarqZooModel):
+    model: TernaryDenseNet = ComponentField(TernaryDenseNet28Factory)
+
+    epochs = Field(120)
+    batch_size = Field(256)
+
+    learning_rate: float = Field(4e-3)
+    learning_factor: float = Field(0.1)
+    learning_steps: Sequence[int] = Field((100, 110))
+
+    def learning_rate_schedule(self, epoch):
+        lr = self.learning_rate
+        for step in self.learning_steps:
+            if epoch < step:
+                return lr
+            lr *= self.learning_factor
+        return lr
+
+    optimizer = Field(
+        lambda self: tf.keras.optimizers.Adam(self.learning_rate, epsilon=1e-8)
+    )
 
 
 @task
