@@ -4,7 +4,7 @@ import tensorflow as tf
 from zookeeper import ComponentField, Field, cli, task
 
 from larq_zoo.literature.binary_alex_net import BinaryAlexNetFactory
-from larq_zoo.literature.birealnet import BiRealNetFactory
+from larq_zoo.literature.birealnet import BiRealNetFactory, TerRealNetFactory
 from larq_zoo.literature.densenet import (
     BinaryDenseNet,
     BinaryDenseNet28Factory,
@@ -21,7 +21,7 @@ from larq_zoo.literature.densenet_ternary import (
 )
 
 from larq_zoo.literature.dorefanet import DoReFaNetFactory
-from larq_zoo.literature.resnet_e import BinaryResNetE18Factory
+from larq_zoo.literature.resnet_e import BinaryResNetE18Factory, TernaryResNetE18Factory
 from larq_zoo.literature.xnornet import XNORNetFactory
 from larq_zoo.training.train import TrainLarqZooModel
 
@@ -63,10 +63,57 @@ class TrainBiRealNet(TrainLarqZooModel):
             lr = self.learning_rate
         return tf.keras.optimizers.Adam(lr)
 
+@task
+class TrainTerRealNet(TrainLarqZooModel):
+    model = ComponentField(TerRealNetFactory)
+
+    epochs = Field(300)
+    batch_size = Field(512)
+
+    learning_rate: float = Field(5e-3)
+    decay_schedule: str = Field("linear")
+
+    @Field
+    def optimizer(self):
+        if self.decay_schedule == "linear_cosine":
+            lr = tf.keras.experimental.LinearCosineDecay(self.learning_rate, 750684)
+        elif self.decay_schedule == "linear":
+            lr = tf.keras.optimizers.schedules.PolynomialDecay(
+                self.learning_rate, 750684, end_learning_rate=0, power=1.0
+            )
+        else:
+            lr = self.learning_rate
+        return tf.keras.optimizers.Adam(lr)
+
+
 
 @task
 class TrainBinaryResNetE18(TrainLarqZooModel):
     model = ComponentField(BinaryResNetE18Factory)
+
+    epochs = Field(120)
+    batch_size = Field(1024)
+
+    learning_rate: float = Field(0.004)
+    learning_factor: float = Field(0.3)
+    learning_steps: Sequence[int] = Field((70, 90, 110))
+
+    def learning_rate_schedule(self, epoch):
+        lr = self.learning_rate
+        for step in self.learning_steps:
+            if epoch < step:
+                return lr
+            lr *= self.learning_factor
+        return lr
+
+    optimizer = Field(
+        lambda self: tf.keras.optimizers.Adam(self.learning_rate, epsilon=1e-8)
+    )
+
+
+@task
+class TrainTernaryResNetE18(TrainLarqZooModel):
+    model = ComponentField(TernaryResNetE18Factory)
 
     epochs = Field(120)
     batch_size = Field(1024)
@@ -162,6 +209,14 @@ class TrainTernaryDenseNet28(TrainLarqZooModel):
     optimizer = Field(
         lambda self: tf.keras.optimizers.Adam(self.learning_rate, epsilon=1e-8)
     )
+
+@task
+class TrainTernaryDenseNet37(TrainTernaryDenseNet28):
+    model = ComponentField(TernaryDenseNet37Factory)
+    batch_size = Field(192)
+    learning_rate = Field(2e-3)
+    learning_steps = Field((90, 105, 115))
+    learning_factor = Field(0.2)
 
 
 @task
